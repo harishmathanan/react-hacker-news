@@ -1,9 +1,7 @@
 import * as React from 'react';
-// import { connect } from 'react-redux';
-// import { bindActionCreators } from 'redux';
-// import { getAllStories } from '../../actions/storyActions';
-
-import Config from '../../config';
+import { connect } from 'react-redux';
+import { bindActionCreators } from 'redux';
+import { getAllStories } from '../../actions/storyActions';
 
 export interface IStoriesProps {
   isFetching: boolean;
@@ -17,24 +15,16 @@ export interface IStoriesProps {
 class Stories extends React.Component<IStoriesProps, any> {
   constructor(props: IStoriesProps) {
     super(props);
-
-    this.state = {
-      isFetching: false,
-      isError: false,
-      isSuccess: false,
-      message: '',
-      data: {}
-    };
   }
 
   public componentDidMount() {
-    this.getAllStories();
+    this.props.getData();
   }
 
   public render() {
     return (
       <div>
-        {this.state.isFetching &&
+        {this.props.isFetching &&
           <div className="columns">
             <div className="column col-12">
               <h5>Working on it...</h5>
@@ -42,7 +32,7 @@ class Stories extends React.Component<IStoriesProps, any> {
           </div>
         }
 
-        {this.state.isError &&
+        {this.props.isError &&
           <div className="columns">
             <div className="column col-12">
               <h5>{this.props.message}</h5>
@@ -52,7 +42,7 @@ class Stories extends React.Component<IStoriesProps, any> {
 
         <div className="columns">
           <div className="columns col-12">
-            {JSON.stringify(this.state.data)}
+            {JSON.stringify(this.props.data)}
           </div>
         </div>
       </div>
@@ -68,51 +58,9 @@ class Stories extends React.Component<IStoriesProps, any> {
    * 6) Convert the response to valid json data
    * 7) Wait for all promises to resolve
    */
-  private getAllStories = () => {
-
-      fetch(`${Config.serverUrl}/v0/newstories.json`)
-      .then((response: Response) => {
-        if (!response.ok) {
-          this.setState({ isFetching: false, isError: true, isSuccess: false, message: response.statusText });
-
-        } else {
-          // response data returns an array of numbers that represent the story ids.
-          response.json().then((data: any) => {
-
-            const storyLimit = data.slice(0, 15); // limit the items return to 15
-
-            Promise
-              .all(storyLimit.map((storyId: number) => {
-                 // For each story id, fetch and retrieve story data
-                 return fetch(`${Config.serverUrl}/v0/item/${storyId}.json`);
-              }))
-              .then((values: any) => {
-
-                Promise
-                  .all(values.map((value: any) => {
-                    return value.json();
-                  }))
-                  .then((content: any) => {
-                    this.setState({ isFetching: false, isError: false, isSuccess: true, data: content });
-                  })
-                  .catch((error: Error) => {
-                    this.setState({ isFetching: false, isError: true, isSuccess: false, message: error.message});
-                  });
-
-              })
-              .catch((error: Error) => {
-                this.setState({ isFetching: false, isError: true, isSuccess: false, message: error.message});
-              });
-          });
-        }
-      })
-      .catch((error: Error) => {
-        this.setState({ isFetching: false, isError: true, isSuccess: false, message: error.message});
-      });
-  };
 }
 
-/*
+
 const mapStateToProps = (state: any) => {
   return {
     isFetching: state.stories.isFetching,
@@ -128,6 +76,6 @@ const mapDispatchToProps = (dispatch: any) => {
     getData: bindActionCreators(getAllStories, dispatch)
   };
 };
-*/
 
-export default Stories;
+
+export default connect(mapStateToProps, mapDispatchToProps)(Stories);
