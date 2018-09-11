@@ -59,6 +59,15 @@ class Stories extends React.Component<IStoriesProps, any> {
     );
   };
 
+  /**
+   * 1) Get all hacker news stories
+   * 2) Wait for promise to resolve
+   * 3) Limit the news stories to 15 items
+   * 4) Get story content for each news story item
+   * 5) Wait for all promises to resolve
+   * 6) Convert the response to valid json data
+   * 7) Wait for all promises to resolve
+   */
   private getAllStories = () => {
 
       fetch(`${Config.serverUrl}/v0/newstories.json`)
@@ -79,18 +88,16 @@ class Stories extends React.Component<IStoriesProps, any> {
               }))
               .then((values: any) => {
 
-                const arr: any[] = [];
-
-                values.map((value: any) => {
-                  value.json().then((str: any) => {
-                    // console.log(str);
-                    arr.push(str);
+                Promise
+                  .all(values.map((value: any) => {
+                    return value.json();
+                  }))
+                  .then((content: any) => {
+                    this.setState({ isFetching: false, isError: false, isSuccess: true, data: content });
+                  })
+                  .catch((error: Error) => {
+                    this.setState({ isFetching: false, isError: true, isSuccess: false, message: error.message});
                   });
-                });
-
-                // values[0].json().then((str: any) => {
-                  this.setState({ isFetching: false, isError: false, isSuccess: true, data: arr.length});
-                // });
 
               })
               .catch((error: Error) => {
@@ -102,9 +109,7 @@ class Stories extends React.Component<IStoriesProps, any> {
       .catch((error: Error) => {
         this.setState({ isFetching: false, isError: true, isSuccess: false, message: error.message});
       });
-
   };
-
 }
 
 /*

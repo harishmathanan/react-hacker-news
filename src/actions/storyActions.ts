@@ -34,31 +34,29 @@ export const getAllStories = () => {
     dispatch(storyFetchAction());
 
     fetch(`${Config.serverUrl}/v0/newstories.json`)
-    .then((response: Response) => {
-      if (!response.ok) {
-        dispatch(storyErrorAction(response.statusText));
-
-      } else {
-        // response data returns an array of numbers that represent the story ids.
+      .then((response: Response) => {
+        // resolves to an array of story id's
         response.json().then((data: any) => {
-          const storyLimit = data.slice(0, 15); // limit the items return to 15
+          const limitData = data.slice(0, 15); // limit the array to 15 stories
 
           Promise
-            .all(storyLimit.map((storyId: number) => {
-              // For each story id, fetch and retrieve story data
-              fetch(`${Config.serverUrl}/v0/item/${storyId}.json`);
-          }))
-            .then((stories: any) => {
-              dispatch(storyListAction(data));
+            .all(limitData.map((storyId: number) => {
+              // retrieve story object for each id
+              return fetch(`${Config.serverUrl}/v0/item/${storyId}.json`);
+            }))
+            .then((rawResponses: any) => {
+              Promise
+                .all(rawResponses.map((value: any) => {
+                  return value.json();
+                }))
+                .then((stories: any) => {
+                  dispatch(storyListAction(stories));
+                })
             })
-            .catch((error: Error) => {
-              dispatch(storyErrorAction(error.message));
-            });
-        });
-      }
-    })
-    .catch((error: Error) => {
-      dispatch(storyErrorAction(error.message));
-    });
+        })
+      })
+      .catch((error: Error) => {
+        dispatch(storyErrorAction(error.message));
+      });
   };
 };
